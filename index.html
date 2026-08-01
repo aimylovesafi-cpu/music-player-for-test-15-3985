@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00F5FF">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luxury Music Player</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #050507;
+            font-family: Arial, sans-serif;
+        }
+        
+        .glassmorphism {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .glassmorphism:hover {
+            backdrop-filter: blur(10px);
+        }
+        
+        .play-button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .play-button:hover {
+            background-color: #444;
+        }
+        
+        .stop-button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .stop-button:hover {
+            background-color: #444;
+        }
+        
+        .file-picker {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .file-picker:hover {
+            background-color: #444;
+        }
+        
+        .playlist {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .playlist:hover {
+            background-color: #444;
+        }
+        
+        .visualization {
+            width: 100%;
+            height: 200px;
+            background-color: #333;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .visualization canvas {
+            width: 100%;
+            height: 100%;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="glassmorphism mx-auto w-1/2 p-4 mt-20">
+        <h1 class="text-3xl text-center mb-4">Luxury Music Player</h1>
+        <input type="file" class="file-picker w-full p-4 mb-4" id="file-input" accept=".mp3, .ogg, .wav">
+        <button class="play-button w-full p-4 mb-4">Play</button>
+        <button class="stop-button w-full p-4 mb-4">Stop</button>
+        <button class="playlist w-full p-4 mb-4">Playlist</button>
+        <div class="visualization"></div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const playButton = document.querySelector('.play-button');
+        const stopButton = document.querySelector('.stop-button');
+        const playlistButton = document.querySelector('.playlist');
+        const visualization = document.querySelector('.visualization');
+        
+        let audio = new Audio();
+        let playing = false;
+        let playlist = [];
+        
+        fileInput.addEventListener('change', (e) => {
+            const file = fileInput.files[0];
+            audio.src = URL.createObjectURL(file);
+            playlist.push(file.name);
+        });
+        
+        playButton.addEventListener('click', () => {
+            if (!playing) {
+                audio.play();
+                playing = true;
+                playButton.textContent = 'Pause';
+                stopButton.disabled = false;
+            } else {
+                audio.pause();
+                playing = false;
+                playButton.textContent = 'Play';
+                stopButton.disabled = true;
+            }
+        });
+        
+        stopButton.addEventListener('click', () => {
+            audio.pause();
+            playing = false;
+            playButton.textContent = 'Play';
+            stopButton.disabled = true;
+        });
+        
+        playlistButton.addEventListener('click', () => {
+            const playlistContainer = document.createElement('div');
+            playlistContainer.style.position = 'absolute';
+            playlistContainer.style.top = '0';
+            playlistContainer.style.left = '0';
+            playlistContainer.style.width = '100%';
+            playlistContainer.style.height = '100%';
+            playlistContainer.style.background = 'rgba(0, 0, 0, 0.5)';
+            playlistContainer.style.display = 'flex';
+            playlistContainer.style.flexDirection = 'column';
+            playlistContainer.style.alignItems = 'center';
+            playlistContainer.style.justifyContent = 'center';
+            
+            playlist.forEach((song) => {
+                const songElement = document.createElement('div');
+                songElement.textContent = song;
+                songElement.style.marginBottom = '10px';
+                songElement.style.fontSize = '24px';
+                songElement.style.color = '#fff';
+                playlistContainer.appendChild(songElement);
+            });
+            
+            document.body.appendChild(playlistContainer);
+            
+            const closePlaylist = () => {
+                document.body.removeChild(playlistContainer);
+            };
+            
+            document.addEventListener('click', (e) => {
+                if (e.target !== playlistContainer && !playlistContainer.contains(e.target)) {
+                    closePlaylist();
+                }
+            });
+        });
+        
+        const ctx = visualization.getContext('2d');
+        let wave = [];
+        
+        audio.addEventListener('timeupdate', () => {
+            const currentTime = audio.currentTime;
+            const duration = audio.duration;
+            const progress = (currentTime / duration) * 100;
+            
+            ctx.clearRect(0, 0, visualization.width, visualization.height);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, visualization.height - (progress * visualization.height), visualization.width, visualization.height);
+            
+            if (wave.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(0, visualization.height - (progress * visualization.height));
+                wave.forEach((point, index) => {
+                    ctx.lineTo(index * 10, visualization.height - (point * visualization.height));
+                });
+                ctx.stroke();
+            }
+        });
+        
+        audio.addEventListener('canplay', () => {
+            const duration = audio.duration;
+            const sampleRate = audio.context.sampleRate;
+            const waveLength = Math.floor(duration * sampleRate);
+            
+            wave = new Array(waveLength).fill(0);
+            let sample = 0;
+            let frame = 0;
+            
+            const interval = setInterval(() => {
+                if (frame >= waveLength) {
+                    clearInterval(interval);
+                } else {
+                    const amplitude = Math.sin(sample * 2 * Math.PI);
+                    wave[frame] = amplitude;
+                    sample += 0.01;
+                    frame++;
+                }
+            }, 10);
+        });
+    </script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script></body>
+</html>
